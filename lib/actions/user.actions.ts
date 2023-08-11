@@ -102,3 +102,24 @@ export async function fetchUsers({ userId, searchString = "", pageNumber = 1, pa
     console.error("Failed to fetch users info", error.message);
   }
 }
+
+export async function getActivity(userId: string) {
+  connectDatabase();
+  try {
+    const userThreads = await Thread.find({ author: userId });
+    const childThreadIds = userThreads.reduce((acc, userThread) => {
+      return acc.concat(userThread.children);
+    }, []);
+    const replies = await Thread.find({
+      _id: { $in: childThreadIds },
+      author: { $ne: userId }
+    }).populate({
+      path: "author",
+      model: User,
+      select: "name image _id"
+    });
+    return replies;
+  } catch (error: any) {
+    console.error("Failed to fetch user activity", error.message);
+  }
+}
